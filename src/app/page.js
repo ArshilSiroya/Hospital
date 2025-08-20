@@ -90,7 +90,7 @@ export default function Hospital() {
 
       // Extract and log the "Add on total" value
       const addOnTotalRow = data.data.find(
-        (row) => row.Category === "" && row.Formula === "Add on total"
+          (row) => row.Category === "Final Total" && row.Formula === ""
       );
       if (addOnTotalRow) {
         console.log("Add on total value:", addOnTotalRow.Value);
