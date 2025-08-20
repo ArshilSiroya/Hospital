@@ -1,5 +1,25 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 // Dynamically import the map components with no SSR
 let VectorMap = null;
@@ -26,6 +46,71 @@ const loadMapComponents = async () => {
 // pass your dynamic value here
 const valueForGujarat = 8500000; // try 80, 150, 250 to see shades change
 const maxValue = 8500000; // Maximum value for full color coverage
+
+// Chart data
+
+const chartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+    title: {
+      display: true,
+      // text: 'Monthly Data Chart',
+      font: {
+        size: 16,
+        weight: 'bold'
+      }
+    },
+    tooltip: {
+      callbacks: {
+        // label: function(context) {
+        //   return `${context.dataset.label}: ${context.parsed.y}`;
+        // },
+        title: function(context) {
+          return ''; // Hide the title line
+        },
+        afterBody: function(context) {
+          const currentIndex = context[0].dataIndex;
+          const currentValue = context[0].parsed.y;
+          const previousValue = context[0].dataset.data[currentIndex - 1];
+          
+          if (previousValue !== undefined && previousValue !== 0) {
+            const change = ((currentValue - previousValue) / previousValue) * 100;
+            const changeText = change >= 0 ? `+${change.toFixed(0)}%` : `${change.toFixed(0)}%`;
+            const changeType = change >= 0 ? 'Increased' : 'Decreased';
+            const icon = change >= 0 ? '📈' : '📉';
+            return `${icon} ${changeType} by ${changeText} from previous 3 months`;
+          } else {
+            return '📊 First data point';
+          }
+        }
+      },
+      bodySpacing: 10,
+      titleSpacing: 10
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      title: {
+        display: true,
+        text: 'Values'
+      }
+    },
+    x: {
+      title: {
+        display: true,
+        // text: 'Months'
+      }
+    }
+  },
+  // Control bar width
+  barThickness: 60, // Fixed width in pixels
+  // Alternative: use barPercentage for relative width
+  // barPercentage: 0.6, // 60% of available space
+};
 
 // Calculate coverage percentage
 const getCoveragePercentage = (value) => {
@@ -70,7 +155,46 @@ export default function Hospital() {
   const [mapComponentsLoaded, setMapComponentsLoaded] = useState(false);
   const coveragePercentage = getCoveragePercentage(valueForGujarat);
   const colorIntensity = getColorIntensity(valueForGujarat);
+  const [chartData, setChartData] = useState(null);
+  console.log("🚀 ~ Hospital ~ chartData:", chartData)
 
+  const chartData1 = {
+    labels: chartData?.data?.slice(5, 15).map(item => item.Formula),
+    datasets: [
+      {
+        label: 'Data',
+        // label: chartData?.data?.slice(5, 15).map(item => item.Formula),
+        data: chartData?.data?.slice(5, 15).map(item => parseFloat(item.Value) || 0),
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.8)',
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 206, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+          'rgba(255, 159, 64, 0.8)',
+          'rgba(199, 199, 199, 0.8)',
+          'rgba(83, 102, 255, 0.8)',
+          'rgba(78, 252, 3, 0.8)',
+          'rgba(252, 3, 244, 0.8)',
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)',
+          'rgba(199, 199, 199, 1)',
+          'rgba(83, 102, 255, 1)',
+          'rgba(78, 252, 3, 1)',
+          'rgba(252, 3, 244, 1)',
+        ],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  
   const fetchGoogleSheetsData = async () => {
     try {
       // Replace with your actual spreadsheet ID and sheet name
@@ -90,13 +214,14 @@ export default function Hospital() {
 
       // Extract and log the "Add on total" value
       const addOnTotalRow = data.data.find(
-          (row) => row.Category === "Final Total" && row.Formula === ""
+        (row) => row.Category === "Final Total" && row.Formula === ""
       );
       if (addOnTotalRow) {
         console.log("Add on total value:", addOnTotalRow.Value);
         setValueForGujarat(addOnTotalRow.Value);
       }
 
+      setChartData(data);
       return data;
     } catch (error) {
       console.error("Error fetching Google Sheets data:", error);
@@ -213,13 +338,7 @@ export default function Hospital() {
 
   return (
     <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "20px",
-        backgroundColor: "#f8f9fa",
-      }}
+     
     >
       {/* <h1
         style={{
@@ -233,6 +352,20 @@ export default function Hospital() {
       </h1> */}
       {valueForGujarat && mapComponentsLoaded ? (
         <>
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "20px",
+          // backgroundColor: "#f8f9fa",
+          width: "100%",
+          maxWidth: "600px",
+          margin: "0 auto"
+        }}
+        >
+          {/* Chart Section */}
+          
+          {/* Map Section */}
           <div style={{ marginTop: "20px", textAlign: "center" }}>
             <div style={{ marginBottom: "15px" }}>
               <span
@@ -241,35 +374,6 @@ export default function Hospital() {
                 Coverage: {coveragePercentage.toFixed(2)}%
               </span>
             </div>
-
-            {/* Visual coverage indicator */}
-            {/* <div style={{ marginBottom: "20px" }}>
-              <div
-                style={{
-                  width: "200px",
-                  height: "200px",
-                  borderRadius: "50%",
-                  background: `radial-gradient(circle, ${colorIntensity} 0%, ${colorIntensity} ${coveragePercentage}%, transparent ${coveragePercentage}%, transparent 100%)`,
-                  border: "3px solid #000",
-                  margin: "0 auto",
-                  position: "relative",
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    color: "#333",
-                  }}
-                >
-                  {coveragePercentage.toFixed(1)}%
-                </div>
-              </div>
-            </div> */}
 
             <div
               style={{
@@ -293,20 +397,9 @@ export default function Hospital() {
                 {maxValue.toLocaleString()}
               </span>
             </div>
-
-            {/* <div style={{ fontSize: "14px", color: "#666", marginTop: "15px" }}>
-              <div>
-                • <strong>10% coverage:</strong> Small dot in center
-              </div>
-              <div>
-                • <strong>50% coverage:</strong> Color spreads from center to
-                cover half of Gujarat
-              </div>
-              <div>
-                • <strong>100% coverage:</strong> Full Gujarat is colored
-              </div>
-            </div> */}
           </div>
+
+          {/* Map Container */}
           <div
             style={{
               border: "2px solid #ddd",
@@ -319,12 +412,12 @@ export default function Hospital() {
             <div style={{ width: "600px", height: "600px" }} ref={mapRef}>
               <style>
                 {`
-                .jvectormap-container svg path {
-                  stroke: #000000 !important;
-                  stroke-width: 1px !important;
-                  stroke-opacity: 1 !important;
-                }
-              `}
+                  .jvectormap-container svg path {
+                    stroke: #000000 !important;
+                    stroke-width: 1px !important;
+                    stroke-opacity: 1 !important;
+                  }
+                `}
               </style>
               <ClientOnlyMap>
                 {VectorMap && inMill ? (
@@ -363,9 +456,34 @@ export default function Hospital() {
                 )}
               </ClientOnlyMap>
             </div>
-
-            {/* Legend with coverage visualization */}
           </div>
+        </div>
+        <div>
+        
+          <div style={{ 
+            marginTop: "20px", 
+            padding: "20px",
+            backgroundColor: "white",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            border: "2px solid #ddd",
+            width: "90%",
+            // maxWidth: "600px",
+            margin: "0 auto"
+          }}>
+            <h2 style={{ 
+              textAlign: "center", 
+              marginBottom: "20px", 
+              color: "#333",
+              fontSize: "1.5rem"
+            }}>
+              3 Months Data Visualization
+            </h2>
+            <div style={{ width: "90%",  margin: "0 auto" }}>
+              <Bar data={chartData1} options={chartOptions} />
+            </div>
+          </div>
+        </div>
         </>
       ) : (
         <div>
