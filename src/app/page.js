@@ -159,12 +159,12 @@ export default function Hospital() {
   console.log("🚀 ~ Hospital ~ chartData:", chartData)
 
   const chartData1 = {
-    labels: chartData?.data?.slice(5, 15).map(item => item.Formula),
+    labels: chartData?.data?.slice(5, 16).map(item => item.Formula),
     datasets: [
       {
         label: 'Data',
         // label: chartData?.data?.slice(5, 15).map(item => item.Formula),
-        data: chartData?.data?.slice(5, 15).map(item => parseFloat(item.Value) || 0),
+        data: chartData?.data?.slice(5, 16).map(item => parseFloat(item.Value) || 0),
         backgroundColor: [
           'rgba(255, 99, 132, 0.8)',
           'rgba(54, 162, 235, 0.8)',
